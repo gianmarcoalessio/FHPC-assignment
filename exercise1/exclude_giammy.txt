@@ -1,0 +1,2 @@
+playground_*
+ssnapshot_*

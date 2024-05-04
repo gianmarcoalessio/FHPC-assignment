@@ -1,0 +1,20 @@
+mkdir -p obj
+mpicc -O3 -fopenmp -march=native -g -Iinclude -c src/read_write_pgm.c -o obj/read_write_pgm.o
+src/read_write_pgm.c: In function ‘parallel_write_pgm_image’:
+src/read_write_pgm.c:223:16: warning: ‘return’ with a value, in function returning void
+  223 |         return -1;
+      |                ^
+src/read_write_pgm.c:205:6: note: declared here
+  205 | void parallel_write_pgm_image(void *image, int maxval, int xsize, int my_chunk, const char *image_name, int offset)
+      |      ^~~~~~~~~~~~~~~~~~~~~~~~
+mpicc -O3 -fopenmp -march=native -g -Iinclude -lm main.o obj/read_write_pgm.o obj/static_evolution.o obj/ordered_evolution.o -o /orfeo/cephfs/home/dssc/galess00/final_assignment_FHPC/exercise1/thin/testing02static/main.x
+Playground reading for starting.pgm:
+0 1 1 0 
+0 1 1 1 
+0 0 1 1 
+0 0 0 0 
+Processor 0:
+0 1 1 0 
+0 1 1 1 
+0 0 1 1 
+0 0 0 0 

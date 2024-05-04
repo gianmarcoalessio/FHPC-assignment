@@ -1,0 +1,8 @@
+mkdir -p obj
+mpicc -O3 -fopenmp -march=native -g -Iinclude -c src/static_evolution.c -o obj/static_evolution.o
+mpicc -O3 -fopenmp -march=native -g -Iinclude -lm main.o obj/read_write_pgm.o obj/static_evolution.o obj/ordered_evolution.o -o /orfeo/cephfs/home/dssc/galess00/final_assignment_FHPC/exercise1/thin/testing02static/main.x
+Processor 0:
+0 0 0 0 1 0 1 1 
+0 0 1 1 0 0 0 0 
+0 0 1 0 1 0 1 1 
+0 0 1 0 1 0 0 0 

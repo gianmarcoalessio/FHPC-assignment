@@ -1,0 +1,57 @@
+mpicc -O3 -fopenmp -march=native -g -Iinclude -c main.c
+main.c: In function ‘main’:
+main.c:161:52: warning: passing argument 2 of ‘read_pgm_image’ makes pointer from integer without a cast [-Wint-conversion]
+  161 |             read_pgm_image((void **)&playground_s, maxval, k, k, fname);
+      |                                                    ^~~~~~
+      |                                                    |
+      |                                                    int
+In file included from main.c:14:
+include/read_write_pgm.h:5:40: note: expected ‘int *’ but argument is of type ‘int’
+    5 | void read_pgm_image(void **image, int *maxval, int *xsize, int *ysize, const char *image_name);
+      |                                   ~~~~~^~~~~~
+main.c:161:60: warning: passing argument 3 of ‘read_pgm_image’ makes pointer from integer without a cast [-Wint-conversion]
+  161 |             read_pgm_image((void **)&playground_s, maxval, k, k, fname);
+      |                                                            ^
+      |                                                            |
+      |                                                            int
+include/read_write_pgm.h:5:53: note: expected ‘int *’ but argument is of type ‘int’
+    5 | void read_pgm_image(void **image, int *maxval, int *xsize, int *ysize, const char *image_name);
+      |                                                ~~~~~^~~~~
+main.c:161:63: warning: passing argument 4 of ‘read_pgm_image’ makes pointer from integer without a cast [-Wint-conversion]
+  161 |             read_pgm_image((void **)&playground_s, maxval, k, k, fname);
+      |                                                               ^
+      |                                                               |
+      |                                                               int
+include/read_write_pgm.h:5:65: note: expected ‘int *’ but argument is of type ‘int’
+    5 | void read_pgm_image(void **image, int *maxval, int *xsize, int *ysize, const char *image_name);
+      |                                                            ~~~~~^~~~~
+mpicc -O3 -fopenmp -march=native -g -Iinclude -lm main.o obj/read_write_pgm.o obj/static_evolution.o obj/ordered_evolution.o -o /orfeo/cephfs/home/dssc/galess00/final_assignment_FHPC/exercise1/thin/testing02static/main.x
+[thin002:1003786:0:1003786] Caught signal 11 (Segmentation fault: address not mapped to object at address 0xff)
+==== backtrace (tid:1003786) ====
+ 0  /lib64/libucs.so.0(ucs_handle_error+0x2e4) [0x7f219ffaf794]
+ 1  /lib64/libucs.so.0(+0x29e3d) [0x7f219ffb0e3d]
+ 2  /lib64/libucs.so.0(+0x2a025) [0x7f219ffb1025]
+ 3  main.x() [0x40293e]
+ 4  main.x() [0x4025fa]
+ 5  /lib64/libc.so.6(+0x27550) [0x7f21a730c550]
+ 6  /lib64/libc.so.6(__libc_start_main+0x89) [0x7f21a730c609]
+ 7  main.x() [0x402735]
+=================================
+[thin002:1003786] *** Process received signal ***
+[thin002:1003786] Signal: Segmentation fault (11)
+[thin002:1003786] Signal code:  (-6)
+[thin002:1003786] Failing at address: 0x99cf95000f510a
+[thin002:1003786] [ 0] /lib64/libc.so.6(+0x3cb60)[0x7f21a7321b60]
+[thin002:1003786] [ 1] main.x[0x40293e]
+[thin002:1003786] [ 2] main.x[0x4025fa]
+[thin002:1003786] [ 3] /lib64/libc.so.6(+0x27550)[0x7f21a730c550]
+[thin002:1003786] [ 4] /lib64/libc.so.6(__libc_start_main+0x89)[0x7f21a730c609]
+[thin002:1003786] [ 5] main.x[0x402735]
+[thin002:1003786] *** End of error message ***
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun noticed that process rank 0 with PID 1003786 on node thin002 exited on signal 11 (Segmentation fault).
+--------------------------------------------------------------------------

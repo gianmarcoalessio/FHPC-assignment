@@ -1,0 +1,59 @@
+mpicc -O3 -fopenmp -march=native -g -Iinclude -c main.c
+main.c: In function ‘main’:
+main.c:160:52: warning: passing argument 2 of ‘read_pgm_image’ makes pointer from integer without a cast [-Wint-conversion]
+  160 |             read_pgm_image((void **)&playground_s, 255, k, k, fname);
+      |                                                    ^~~
+      |                                                    |
+      |                                                    int
+In file included from main.c:14:
+include/read_write_pgm.h:5:40: note: expected ‘int *’ but argument is of type ‘int’
+    5 | void read_pgm_image(void **image, int *maxval, int *xsize, int *ysize, const char *image_name);
+      |                                   ~~~~~^~~~~~
+main.c:160:57: warning: passing argument 3 of ‘read_pgm_image’ makes pointer from integer without a cast [-Wint-conversion]
+  160 |             read_pgm_image((void **)&playground_s, 255, k, k, fname);
+      |                                                         ^
+      |                                                         |
+      |                                                         int
+include/read_write_pgm.h:5:53: note: expected ‘int *’ but argument is of type ‘int’
+    5 | void read_pgm_image(void **image, int *maxval, int *xsize, int *ysize, const char *image_name);
+      |                                                ~~~~~^~~~~
+main.c:160:60: warning: passing argument 4 of ‘read_pgm_image’ makes pointer from integer without a cast [-Wint-conversion]
+  160 |             read_pgm_image((void **)&playground_s, 255, k, k, fname);
+      |                                                            ^
+      |                                                            |
+      |                                                            int
+include/read_write_pgm.h:5:65: note: expected ‘int *’ but argument is of type ‘int’
+    5 | void read_pgm_image(void **image, int *maxval, int *xsize, int *ysize, const char *image_name);
+      |                                                            ~~~~~^~~~~
+mkdir -p obj
+mpicc -O3 -fopenmp -march=native -g -Iinclude -c src/read_write_pgm.c -o obj/read_write_pgm.o
+mpicc -O3 -fopenmp -march=native -g -Iinclude -lm main.o obj/read_write_pgm.o obj/static_evolution.o obj/ordered_evolution.o -o /orfeo/cephfs/home/dssc/galess00/final_assignment_FHPC/exercise1/thin/testing02static/main.x
+[thin002:1003527:0:1003527] Caught signal 11 (Segmentation fault: address not mapped to object at address 0xff)
+==== backtrace (tid:1003527) ====
+ 0  /lib64/libucs.so.0(ucs_handle_error+0x2e4) [0x7f4534479794]
+ 1  /lib64/libucs.so.0(+0x29e3d) [0x7f453447ae3d]
+ 2  /lib64/libucs.so.0(+0x2a025) [0x7f453447b025]
+ 3  main.x() [0x40293e]
+ 4  main.x() [0x4025fa]
+ 5  /lib64/libc.so.6(+0x27550) [0x7f453f7ed550]
+ 6  /lib64/libc.so.6(__libc_start_main+0x89) [0x7f453f7ed609]
+ 7  main.x() [0x402735]
+=================================
+[thin002:1003527] *** Process received signal ***
+[thin002:1003527] Signal: Segmentation fault (11)
+[thin002:1003527] Signal code:  (-6)
+[thin002:1003527] Failing at address: 0x99cf95000f5007
+[thin002:1003527] [ 0] /lib64/libc.so.6(+0x3cb60)[0x7f453f802b60]
+[thin002:1003527] [ 1] main.x[0x40293e]
+[thin002:1003527] [ 2] main.x[0x4025fa]
+[thin002:1003527] [ 3] /lib64/libc.so.6(+0x27550)[0x7f453f7ed550]
+[thin002:1003527] [ 4] /lib64/libc.so.6(__libc_start_main+0x89)[0x7f453f7ed609]
+[thin002:1003527] [ 5] main.x[0x402735]
+[thin002:1003527] *** End of error message ***
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun noticed that process rank 0 with PID 1003527 on node thin002 exited on signal 11 (Segmentation fault).
+--------------------------------------------------------------------------

@@ -1,0 +1,7 @@
+serial.o
+exclude.txt
+sync_giammy.sh
+sync_orfeo.sh
+main.o
+media/
+.DS_Store

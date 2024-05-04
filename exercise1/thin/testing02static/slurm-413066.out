@@ -1,0 +1,13 @@
+mpicc -O3 -fopenmp -march=native -g -Iinclude -c main.c
+main.c: In function ‘main’:
+main.c:167:35: error: ‘playground’ undeclared (first use in this function); did you mean ‘playground_s’?
+  167 |                     printf("%d ", playground[i * k + j] == MAXVAL ? 1 : 0);
+      |                                   ^~~~~~~~~~
+      |                                   playground_s
+main.c:167:35: note: each undeclared identifier is reported only once for each function it appears in
+make: *** [Makefile:17: main.o] Error 1
+Processor 0:
+0 0 1 1 
+1 1 0 1 
+1 0 0 1 
+1 1 0 0 

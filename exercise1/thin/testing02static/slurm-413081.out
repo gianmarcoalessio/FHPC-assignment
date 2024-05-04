@@ -1,0 +1,35 @@
+mpicc -O3 -fopenmp -march=native -g -Iinclude -c main.c
+main.c: In function ‘main’:
+main.c:160:52: error: lvalue required as unary ‘&’ operand
+  160 |             read_pgm_image((void **)&playground_s, &MAXVAL, &k, &k, fname);
+      |                                                    ^
+make: *** [Makefile:17: main.o] Error 1
+[thin002:1003608:0:1003608] Caught signal 11 (Segmentation fault: address not mapped to object at address 0xff)
+==== backtrace (tid:1003608) ====
+ 0  /lib64/libucs.so.0(ucs_handle_error+0x2e4) [0x7ffa55c8d794]
+ 1  /lib64/libucs.so.0(+0x29e3d) [0x7ffa55c8ee3d]
+ 2  /lib64/libucs.so.0(+0x2a025) [0x7ffa55c8f025]
+ 3  main.x() [0x40293e]
+ 4  main.x() [0x4025fa]
+ 5  /lib64/libc.so.6(+0x27550) [0x7ffa60fe5550]
+ 6  /lib64/libc.so.6(__libc_start_main+0x89) [0x7ffa60fe5609]
+ 7  main.x() [0x402735]
+=================================
+[thin002:1003608] *** Process received signal ***
+[thin002:1003608] Signal: Segmentation fault (11)
+[thin002:1003608] Signal code:  (-6)
+[thin002:1003608] Failing at address: 0x99cf95000f5058
+[thin002:1003608] [ 0] /lib64/libc.so.6(+0x3cb60)[0x7ffa60ffab60]
+[thin002:1003608] [ 1] main.x[0x40293e]
+[thin002:1003608] [ 2] main.x[0x4025fa]
+[thin002:1003608] [ 3] /lib64/libc.so.6(+0x27550)[0x7ffa60fe5550]
+[thin002:1003608] [ 4] /lib64/libc.so.6(__libc_start_main+0x89)[0x7ffa60fe5609]
+[thin002:1003608] [ 5] main.x[0x402735]
+[thin002:1003608] *** End of error message ***
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun noticed that process rank 0 with PID 1003608 on node thin002 exited on signal 11 (Segmentation fault).
+--------------------------------------------------------------------------

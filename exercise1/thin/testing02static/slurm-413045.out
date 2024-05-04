@@ -1,0 +1,17 @@
+mpicc -O3 -fopenmp -march=native -g -Iinclude -lm main.o obj/read_write_pgm.o obj/static_evolution.o obj/ordered_evolution.o -o /orfeo/cephfs/home/dssc/galess00/final_assignment_FHPC/exercise1/thin/testing02static/main.x
+thin005.hpc.rd.areasciencepark.it:rank0.main.x: Failed to modify UD QP to INIT on mlx5_0: Operation not permitted
+thin005.hpc.rd.areasciencepark.it:rank0.main.x: Failed to modify UD QP to INIT on mlx5_0: Operation not permitted
+thin005.hpc.rd.areasciencepark.it:rank0.main.x: Failed to modify UD QP to INIT on mlx5_0: Operation not permitted
+thin005.hpc.rd.areasciencepark.it:rank0.main.x: Failed to modify UD QP to INIT on mlx5_0: Operation not permitted
+--------------------------------------------------------------------------
+Open MPI failed an OFI Libfabric library call (fi_endpoint).  This is highly
+unusual; your job may behave unpredictably (and/or abort) after this.
+
+  Local host: thin005
+  Location: mtl_ofi_component.c:509
+  Error: Invalid argument (22)
+--------------------------------------------------------------------------
+0 0 0 0 0 1 0 1 
+1 1 0 0 0 1 1 1 
+1 0 1 0 1 0 0 0 
+0 1 1 0 1 1 0 1 

@@ -1,0 +1,11 @@
+make: Nothing to be done for 'par'.
+Playground reading for starting.pgm:
+0 1 0 0 
+0 1 1 1 
+1 0 1 1 
+0 0 0 0 
+Processor 0:
+0 1 0 0 
+0 1 1 1 
+1 0 1 1 
+0 0 0 0 
