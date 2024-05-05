@@ -6,7 +6,7 @@
 #SBATCH -n 48
 #SBATCH --exclusive
 #SBATCH --time=02:00:00
-#SBATCH --nodelist=thin[007-008]
+#SBATCH --nodelist=thin[002-003]
 
 module load openMPI/4.1.5/gnu/12.2.1 
 policy=close
@@ -30,7 +30,7 @@ export OMP_NUM_THREADS=1 #1 thread per core to look at the MPI scalability
 
 for size in 55000 65000
 do
-mpirun -np 4 -N 2 --map-by socket main.x -i -f "playground_${size}.pgm" -k $size
+mpirun -np 1 -N 1 --map-by socket main.x -i -f "playground_${size}.pgm" -k $size
 for procs in 1 $(seq 2 2 48)
 do
 	echo -n "${size}," >> $datafile
@@ -43,6 +43,6 @@ done
 
 
 cd ../..
-make clean 
+make clean location=$loc
 module purge
 cd $loc
