@@ -28,7 +28,7 @@ fi
 ## initialize a playground
 export OMP_NUM_THREADS=1 #1 thread per core to look at the MPI scalability
 
-for size in 15000 25000 35000 45000
+for size in 55000 65000
 do
 mpirun -np 4 -N 2 --map-by socket main.x -i -f "playground_${size}.pgm" -k $size
 for procs in 1 $(seq 2 2 48)
@@ -36,7 +36,7 @@ do
 	echo -n "${size}," >> $datafile
 	echo -n "${procs},">> $datafile
 	#mpirun -np $procs -N 2 --map-by core main.x -r -f "playground_${size}.pgm" -e 0 -n 3 -s 0 -k $size
-	mpirun -np $procs -N 2 --map-by core main.x -r -f "playground_${size}.pgm" -e 1 -n 10 -s 0 -k $size
+	mpirun -np $procs -N 2 --map-by core main.x -r -f "playground_${size}.pgm" -e 1 -n 30 -s 0 -k $size
 	echo >> $datafile # add a new line
 done
 done
