@@ -1,0 +1,2 @@
+mpicc -O3 -fopenmp -march=native -g -Iinclude -c main.c
+mpicc -O3 -fopenmp -march=native -g -Iinclude -lm main.o obj/read_write_pgm.o obj/static_evolution.o obj/ordered_evolution.o -o /u/dssc/galess00/FHPC-assignment/exercise1/thin/testing02static/main.x
