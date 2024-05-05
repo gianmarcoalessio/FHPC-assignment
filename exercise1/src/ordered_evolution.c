@@ -9,15 +9,6 @@
 
 void update_cell_ordered(unsigned char *top_adjacent_row, unsigned char *bottom_adjacent_row, unsigned char *local_playground, int xsize, int ysize, int x, int y)
 {
-    // for (int y = 0; y < ysize; y++)
-    // {
-    //     for (int x = 0; x < xsize; x++)
-    //     {
-    //         printf("%d ", local_playground[y * xsize + x] == MAXVAL ? 1 : 0);
-    //     }
-    //     printf("\n");
-    // }
-
     int max_y = ysize - 1;
     int alive_neighbors = 0;
     int nx, ny = 0;
@@ -49,11 +40,9 @@ void update_cell_ordered(unsigned char *top_adjacent_row, unsigned char *bottom_
             alive_neighbors += (cell_value == MAXVAL);
         }
     }
-    // printf("Cell at (%d, %d) has %d alive neighbors\n", x, y, alive_neighbors); // print the total count of alive neighbors for the cell
 
     int cell_index = y * xsize + x;
 
-    // local_playground[cell_index] = (alive_neighbors == 2 || alive_neighbors == 3) ? MAXVAL : 0;
     local_playground[cell_index] = (((local_playground[cell_index] == MAXVAL) && (alive_neighbors == 2 || alive_neighbors == 3)) || ((local_playground[cell_index] == 0) && alive_neighbors == 3)) ? MAXVAL : 0;
 }
 
@@ -95,8 +84,6 @@ void ordered_evolution(unsigned char *local_playground, int xsize, int my_chunk,
         int start = rank * chunk_size + ((rank < remainder) ? rank : remainder);
         int end = start + chunk_size + (rank < remainder);
 
-        printf("Rank %d: start = %d, end = %d , xsize = %d, size = %d \n", rank, start, end, xsize, size);
-
         // Start computation that does not depend on the data being communicated
         // #pragma omp parallel for collapse(2)
         for (int i = start; i < end; i++)
@@ -109,25 +96,6 @@ void ordered_evolution(unsigned char *local_playground, int xsize, int my_chunk,
                 // {
                 // temp_local_playground[i * k + j] = upgrade_cell_ordered(i, j, k, local_playground, top_adjacent_row, bottom_adjacent_row);
                 update_cell_ordered(top_adjacent_row, bottom_adjacent_row, local_playground, xsize, xsize, j, i);
-
-                // PRINTING
-                for (int p = 0; p < size; p++)
-                {
-                    if (rank == p)
-                    {
-                        printf("Processor %d:\n", rank);
-                        for (int y = 0; y < xsize; y++)
-                        {
-                            for (int x = 0; x < xsize; x++)
-                            {
-                                printf("%d ", local_playground[y * xsize + x] == MAXVAL ? 1 : 0);
-                                // printf("%d ", updated_playground[y * xsize + x] == MAXVAL ? 1 : 0);
-                            }
-                            printf("\n");
-                        }
-                    }
-                    MPI_Barrier(MPI_COMM_WORLD); // synchronize the processors
-                }
                 // }
             }
         }

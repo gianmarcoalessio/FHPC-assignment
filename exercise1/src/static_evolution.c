@@ -95,25 +95,6 @@ void static_evolution(unsigned char *local_playground, int xsize, int my_chunk, 
             }
         }
 
-        // PRINTING
-        // for (int p = 0; p < size; p++)
-        // {
-        //     if (rank == p)
-        //     {
-        //         printf("Processor %d:\n", rank);
-        //         for (int y = 0; y < xsize; y++)
-        //         {
-        //             for (int x = 0; x < xsize; x++)
-        //             {
-        //                 printf("%d ", local_playground[y * xsize + x] == MAXVAL ? 1 : 0);
-        //                 // printf("%d ", updated_playground[y * xsize + x] == MAXVAL ? 1 : 0);
-        //             }
-        //             printf("\n");
-        //         }
-        //     }
-        //     MPI_Barrier(MPI_COMM_WORLD); // synchronize the processors
-        // }
-
         memcpy(local_playground, updated_playground, local_size * sizeof(unsigned char));
         // Maybe is faster to use, but we might have problems: local_playground = updated_playground;
         free(updated_playground);

@@ -105,12 +105,6 @@ int main(int argc, char **argv)
         MPI_Comm_size(MPI_COMM_WORLD, &size);
         int color_depth = 1 + (MAXVAL > 255);
 
-        // int chunk_size = k / num_procs;
-        // int rest = k % num_procs;
-
-        // int start = rank * chunk_size + ((rank < rest) ? rank : rest);
-        // int end = start + chunk_size + (rank < rest);
-
         int chunk = k / size; // chuck is the number of rows processed in parallel
         int rest = k % size;
 
@@ -127,17 +121,6 @@ int main(int argc, char **argv)
         {
             unsigned char *playground_o = (unsigned char *)malloc(processed_bytes * sizeof(unsigned char));
             read_pgm_image((void **)&playground_o, &maxval, &k, &k, fname);
-
-            // PRINTING
-            // printf("Playground reading for %s:\n", fname);
-            // for (int i = 0; i < k; i++)
-            // {
-            //     for (int j = 0; j < k; j++)
-            //     {
-            //         printf("%d ", playground_o[i * k + j] == MAXVAL ? 1 : 0);
-            //     }
-            //     printf("\n");
-            // }
 
             if (s >= 0)
             {
@@ -171,17 +154,6 @@ int main(int argc, char **argv)
             unsigned char *playground_s = (unsigned char *)malloc(processed_bytes * sizeof(unsigned char));
 
             read_pgm_image((void **)&playground_s, &maxval, &k, &k, fname);
-
-            // PRINTING
-            // printf("Playground reading for %s:\n", fname);
-            // for (int i = 0; i < k; i++)
-            // {
-            //     for (int j = 0; j < k; j++)
-            //     {
-            //         printf("%d ", playground_s[i * k + j] == MAXVAL ? 1 : 0);
-            //     }
-            //     printf("\n");
-            // }
 
             if (s >= 0)
             {
