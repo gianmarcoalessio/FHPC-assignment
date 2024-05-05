@@ -1,0 +1,9 @@
+mkdir -p obj
+mpicc -O3 -fopenmp -march=native -g -Iinclude -c src/read_write_pgm.c -o obj/read_write_pgm.o
+mkdir -p obj
+mpicc -O3 -fopenmp -march=native -g -Iinclude -c src/static_evolution.c -o obj/static_evolution.o
+mkdir -p obj
+mpicc -O3 -fopenmp -march=native -g -Iinclude -c src/ordered_evolution.c -o obj/ordered_evolution.o
+mpicc -O3 -fopenmp -march=native -g -Iinclude -lm main.o obj/read_write_pgm.o obj/static_evolution.o obj/ordered_evolution.o -o /u/dssc/galess00/FHPC-assignment/exercise1/thin/ordered_omp_scalability/main.x
+rm -rf /u/dssc/galess00/FHPC-assignment/exercise1/thin/ordered_omp_scalability/*.x obj/*.o obj/*.a
+rm /u/dssc/galess00/FHPC-assignment/exercise1/thin/ordered_omp_scalability/*.pgm

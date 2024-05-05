@@ -26,7 +26,7 @@ echo "threads_per_socket, ordered_mean" > $datafile
 mpirun main.x -i -k $size -f "playground.pgm"
 
 
-for socket in $(seq 1 1 4)
+for socket in $(seq 2 1 4)
 do
 for th_socket in $(seq 1 1 12)
 do

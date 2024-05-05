@@ -49,7 +49,7 @@ void update_cell_ordered(unsigned char *top_adjacent_row, unsigned char *bottom_
 void ordered_evolution(unsigned char *local_playground, int xsize, int my_chunk, int my_offset, int n, int s)
 {
 
-    int rank, size;
+   int rank, size;
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank); // get the rank of the current process
     MPI_Comm_size(MPI_COMM_WORLD, &size); // get the total number of processes
@@ -68,54 +68,32 @@ void ordered_evolution(unsigned char *local_playground, int xsize, int my_chunk,
 
     for (int step = 1; step <= n; step++)
     {
+        unsigned char *updated_playground = (unsigned char *)malloc(local_size);
+        MPI_Request request[2];
 
-        MPI_Request request[4];
-        MPI_Status status[4];
+        // Each process sends its top row to its top neighbor
+        MPI_Isend(&local_playground[0], xsize, MPI_UNSIGNED_CHAR, top_neighbor, 0, MPI_COMM_WORLD, &request[0]);
 
-        // Send top ghost row to previous process and receive from next process
-        MPI_Isend(&local_playground[0], xsize, MPI_UNSIGNED_CHAR, top_neighbor, 1, MPI_COMM_WORLD, &request[0]);
-        MPI_Irecv(bottom_adjacent_row, xsize, MPI_UNSIGNED_CHAR, bottom_neighbor, 1, MPI_COMM_WORLD, &request[1]);
-        MPI_Isend(&local_playground[(xsize - 1) * xsize], xsize, MPI_UNSIGNED_CHAR, bottom_neighbor, 0, MPI_COMM_WORLD, &request[2]);
-        MPI_Irecv(top_adjacent_row, xsize, MPI_UNSIGNED_CHAR, top_neighbor, 0, MPI_COMM_WORLD, &request[3]);
+        // Each process sends its bottom row to its bottom neighbor
+        MPI_Isend(&local_playground[(my_chunk - 1) * xsize], xsize, MPI_UNSIGNED_CHAR, bottom_neighbor, 1, MPI_COMM_WORLD, &request[1]);
 
-        // Calculate the range of rows to be processed by the current process
-        int chunk_size = xsize / size;
-        int remainder = xsize % size;
-        int start = rank * chunk_size + ((rank < remainder) ? rank : remainder);
-        int end = start + chunk_size + (rank < remainder);
+        // Each process receives its bottom adjacent row from its bottom neighbor
+        MPI_Recv(bottom_adjacent_row, xsize, MPI_UNSIGNED_CHAR, bottom_neighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+        // Each process receives its top adjacent row from its top neighbor
+        MPI_Recv(top_adjacent_row, xsize, MPI_UNSIGNED_CHAR, top_neighbor, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
 
         // Start computation that does not depend on the data being communicated
-        // #pragma omp parallel for collapse(2)
-        for (int i = start; i < end; i++)
+#pragma omp parallel for collapse(2)
+        for (int y = 0; y < my_chunk; y++)
         {
-
-            for (int j = 0; j < xsize; j++)
+            for (int x = 0; x < xsize; x++)
             {
+                update_cell_ordered(top_adjacent_row, bottom_adjacent_row, local_playground, xsize, xsize, x, y);
 
-                // if (i != 0 && i != xsize - 1)
-                // {
-                // temp_local_playground[i * k + j] = upgrade_cell_ordered(i, j, k, local_playground, top_adjacent_row, bottom_adjacent_row);
-                update_cell_ordered(top_adjacent_row, bottom_adjacent_row, local_playground, xsize, xsize, j, i);
-                // }
             }
         }
-
-        // Wait for the communication to finish
-        MPI_Waitall(4, request, status);
-
-        // // Continue with the computation that depends on the data being communicated
-        // #pragma omp parallel for collapse(2)
-        //         for (int i = 0; i < xsize; i++)
-        //         {
-        //             for (int j = 0; j < xsize; j++)
-        //             {
-        //                 if (i == 0 || i == xsize - 1)
-        //                 {
-        //                     // temp_local_playground[i * k + j] = upgrade_cell_ordered(i, j, k, local_playground, top_adjacent_row, bottom_adjacent_row);
-        //                     update_cell_ordered(top_adjacent_row, bottom_adjacent_row, local_playground, xsize, xsize, j, i);
-        //                 }
-        //             }
-        //         }
 
         if (step % s == 0)
         {
