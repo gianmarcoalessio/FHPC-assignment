@@ -49,12 +49,13 @@ void update_cell_ordered(unsigned char *top_adjacent_row, unsigned char *bottom_
 void ordered_evolution(unsigned char *local_playground, int xsize, int my_chunk, int my_offset, int n, int s)
 {
 
-   int rank, size;
+   int rank, size, nthreads;
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank); // get the rank of the current process
     MPI_Comm_size(MPI_COMM_WORLD, &size); // get the total number of processes
 
-    int local_size = my_chunk * xsize * sizeof(unsigned char);
+    int mpi_order = 0; // Used to manage the ordered evolution of the playground
+
 
     unsigned char *top_adjacent_row = (unsigned char *)malloc(xsize * sizeof(unsigned char));
     unsigned char *bottom_adjacent_row = (unsigned char *)malloc(xsize * sizeof(unsigned char));
@@ -66,39 +67,93 @@ void ordered_evolution(unsigned char *local_playground, int xsize, int my_chunk,
                                              // be rank+1, except for when rank == size-1 (maximum) where the modulus is 0 (process 0 is the bottom
                                              // neighbor of the last process)
 
+    MPI_Request reqs[4]; // Array of requests
+    MPI_Send(&local_playground[0], xsize, MPI_UNSIGNED_CHAR, top_neighbor, 1, MPI_COMM_WORLD);
+    MPI_Recv(bottom_adjacent_row, xsize, MPI_UNSIGNED_CHAR, bottom_neighbor, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Send(&local_playground[(my_chunk - 1) * xsize], xsize, MPI_UNSIGNED_CHAR, bottom_neighbor, 0, MPI_COMM_WORLD);
+    MPI_Recv(top_adjacent_row, xsize, MPI_UNSIGNED_CHAR, top_neighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+
     for (int step = 1; step <= n; step++)
     {
-        unsigned char *updated_playground = (unsigned char *)malloc(local_size);
-        MPI_Request request[2];
+        while(rank != mpi_order) {
+            MPI_Recv(&mpi_order, 1, MPI_INT, top_neighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(top_adjacent_row, xsize, MPI_UNSIGNED_CHAR, top_neighbor, 4, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
 
-        // Each process sends its top row to its top neighbor
-        MPI_Isend(&local_playground[0], xsize, MPI_UNSIGNED_CHAR, top_neighbor, 0, MPI_COMM_WORLD, &request[0]);
+        if (rank == mpi_order) {
+            
+            
+            if(step != 1 || rank == size-1) {
+            	MPI_Irecv(bottom_adjacent_row, xsize, MPI_UNSIGNED_CHAR,bottom_neighbor, 5, MPI_COMM_WORLD, &reqs[0]);
+            	MPI_Status status;
+            	MPI_Wait(&reqs[0], &status);
+            }
+            
+            int nthreads;
+            int th_chunk;
+            int th_mod;
+            int order;
 
-        // Each process sends its bottom row to its bottom neighbor
-        MPI_Isend(&local_playground[(my_chunk - 1) * xsize], xsize, MPI_UNSIGNED_CHAR, bottom_neighbor, 1, MPI_COMM_WORLD, &request[1]);
-
-        // Each process receives its bottom adjacent row from its bottom neighbor
-        MPI_Recv(bottom_adjacent_row, xsize, MPI_UNSIGNED_CHAR, bottom_neighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-        // Each process receives its top adjacent row from its top neighbor
-        MPI_Recv(top_adjacent_row, xsize, MPI_UNSIGNED_CHAR, top_neighbor, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-
-        // Start computation that does not depend on the data being communicated
-#pragma omp parallel for collapse(2)
-        for (int y = 0; y < my_chunk; y++)
-        {
-            for (int x = 0; x < xsize; x++)
+            #pragma omp parallel
             {
-                update_cell_ordered(top_adjacent_row, bottom_adjacent_row, local_playground, xsize, xsize, x, y);
+                #pragma omp single
+                {
+                    nthreads = omp_get_num_threads();
+                    th_chunk = my_chunk / nthreads;
+                    th_mod = my_chunk % nthreads;
+                }
+            }
 
+            order = 0;
+            #pragma omp parallel
+            {
+                int me = omp_get_thread_num();
+                int done = 0;
+                int th_my_first = th_chunk * me + ((me < th_mod) ? me : th_mod);
+                int th_my_chunk = th_chunk + (th_mod > 0) * (me < th_mod);
+
+                while (!done) {
+                    #pragma omp critical
+                    {
+                        if (order == me) {
+                            for (int y = th_my_first; y < th_my_first + th_my_chunk; y++) {
+                                for (int x = 0; x < xsize; x++) {
+                                    update_cell_ordered(top_adjacent_row, bottom_adjacent_row, local_playground, xsize, my_chunk, x, y);
+                                }
+                            }
+                            order++;
+                            done = 1;
+                        }
+                    }
+                }
             }
         }
 
-        if (step % s == 0)
-        {
-            write_snapshot(local_playground, 255, xsize, my_chunk, "ssnapshot", step, my_offset);
+        if(rank != size-1) {
+            mpi_order++;
+            MPI_Send(&mpi_order, 1, MPI_INT, bottom_neighbor, 0, MPI_COMM_WORLD);
+            MPI_Send(&local_playground[(my_chunk - 1) * xsize], xsize, MPI_UNSIGNED_CHAR, 
+             			 bottom_neighbor, 4, MPI_COMM_WORLD);
+
+	    if ( rank == 0 || step != n ) { 
+            MPI_Isend(&local_playground[0], xsize, MPI_UNSIGNED_CHAR, top_neighbor, 5, MPI_COMM_WORLD, &reqs[1]);
+           } 
         }
+        
+        MPI_Barrier(MPI_COMM_WORLD);
+     
+        if(step % s == 0) {
+
+            write_snapshot(local_playground, 255, xsize, my_chunk, "osnapshot", step, offset);
+	 }
+       
+        if(rank == size-1 && step != n) {
+            mpi_order = 0;
+            MPI_Send(&mpi_order, 1, MPI_INT, bottom_neighbor, 0, MPI_COMM_WORLD); // last process sends to the first one
+            MPI_Send(&local_playground[(my_chunk - 1) * xsize], xsize, MPI_UNSIGNED_CHAR, bottom_neighbor, 4, MPI_COMM_WORLD);
+            MPI_Isend(&local_playground[0], xsize, MPI_UNSIGNED_CHAR, top_neighbor, 5, MPI_COMM_WORLD, &reqs[2]);
+        } 
     }
 
     free(top_adjacent_row);
