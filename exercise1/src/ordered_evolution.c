@@ -9,6 +9,9 @@
 
 void update_cell_ordered(unsigned char *top_adjacent_row, unsigned char *bottom_adjacent_row, unsigned char *local_playground, int xsize, int ysize, int x, int y)
 {
+
+#pragma omp critical 
+{
     int max_y = ysize - 1;
     int alive_neighbors = 0;
     int nx, ny = 0;
@@ -44,6 +47,7 @@ void update_cell_ordered(unsigned char *top_adjacent_row, unsigned char *bottom_
     int cell_index = y * xsize + x;
 
     local_playground[cell_index] = (((local_playground[cell_index] == MAXVAL) && (alive_neighbors == 2 || alive_neighbors == 3)) || ((local_playground[cell_index] == 0) && alive_neighbors == 3)) ? MAXVAL : 0;
+    }
 }
 
 void ordered_evolution(unsigned char *local_playground, int xsize, int my_chunk, int my_offset, int n, int s)
@@ -56,7 +60,6 @@ void ordered_evolution(unsigned char *local_playground, int xsize, int my_chunk,
 
     int mpi_order = 0; // Used to manage the ordered evolution of the playground
 
-
     unsigned char *top_adjacent_row = (unsigned char *)malloc(xsize * sizeof(unsigned char));
     unsigned char *bottom_adjacent_row = (unsigned char *)malloc(xsize * sizeof(unsigned char));
 
@@ -68,92 +71,36 @@ void ordered_evolution(unsigned char *local_playground, int xsize, int my_chunk,
                                              // neighbor of the last process)
 
     MPI_Request reqs[4]; // Array of requests
-    MPI_Send(&local_playground[0], xsize, MPI_UNSIGNED_CHAR, top_neighbor, 1, MPI_COMM_WORLD);
-    MPI_Recv(bottom_adjacent_row, xsize, MPI_UNSIGNED_CHAR, bottom_neighbor, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    MPI_Send(&local_playground[(my_chunk - 1) * xsize], xsize, MPI_UNSIGNED_CHAR, bottom_neighbor, 0, MPI_COMM_WORLD);
-    MPI_Recv(top_adjacent_row, xsize, MPI_UNSIGNED_CHAR, top_neighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Isend(&local_playground[0], xsize, MPI_UNSIGNED_CHAR, top_neighbor, 0, MPI_COMM_WORLD, &reqs[0]);
+    MPI_Irecv(bottom_adjacent_row, xsize, MPI_UNSIGNED_CHAR, bottom_neighbor, 0, MPI_COMM_WORLD, &reqs[1]);
+    MPI_Isend(&local_playground[(my_chunk - 1) * xsize], xsize, MPI_UNSIGNED_CHAR, bottom_neighbor, 1, MPI_COMM_WORLD, &reqs[2]);
+    MPI_Irecv(top_adjacent_row, xsize, MPI_UNSIGNED_CHAR, top_neighbor, 1, MPI_COMM_WORLD, &reqs[3]);
+    MPI_Waitall(4, reqs, MPI_STATUSES_IGNORE);
 
+    // A nice idea could be parallelize the update of the next evolution while finish the current one, so as soon the first chunk is updated, the next one is already being updated and so on
 
-    for (int step = 1; step <= n; step++)
-    {
-        while(rank != mpi_order) {
-            MPI_Recv(&mpi_order, 1, MPI_INT, top_neighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            MPI_Recv(top_adjacent_row, xsize, MPI_UNSIGNED_CHAR, top_neighbor, 4, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        }
+    for (int step = 1; step <= n; step++){
 
-        if (rank == mpi_order) {
-            
-            
-            if(step != 1 || rank == size-1) {
-            	MPI_Irecv(bottom_adjacent_row, xsize, MPI_UNSIGNED_CHAR,bottom_neighbor, 5, MPI_COMM_WORLD, &reqs[0]);
-            	MPI_Status status;
-            	MPI_Wait(&reqs[0], &status);
-            }
-            
-            int nthreads;
-            int th_chunk;
-            int th_mod;
-            int order;
+        // Ensure that the processes execute in order
+        for (int i = 0; i < size; i++) {
+            if (i == rank) {       
+    #pragma omp parallel for collapse(2)
 
-            #pragma omp parallel
-            {
-                #pragma omp single
+                for (int y = 0; y < my_chunk; y++)
                 {
-                    nthreads = omp_get_num_threads();
-                    th_chunk = my_chunk / nthreads;
-                    th_mod = my_chunk % nthreads;
-                }
-            }
-
-            order = 0;
-            #pragma omp parallel
-            {
-                int me = omp_get_thread_num();
-                int done = 0;
-                int th_my_first = th_chunk * me + ((me < th_mod) ? me : th_mod);
-                int th_my_chunk = th_chunk + (th_mod > 0) * (me < th_mod);
-
-                while (!done) {
-                    #pragma omp critical
-                    {
-                        if (order == me) {
-                            for (int y = th_my_first; y < th_my_first + th_my_chunk; y++) {
-                                for (int x = 0; x < xsize; x++) {
-                                    update_cell_ordered(top_adjacent_row, bottom_adjacent_row, local_playground, xsize, my_chunk, x, y);
-                                }
-                            }
-                            order++;
-                            done = 1;
+                    for (int x = 0; x < xsize; x++){
+                    #pragma omp ordered
+                        {
+                            update_cell_ordered((y == 0 ? top_adjacent_row : &local_playground[(y - 1) * xsize]),
+                                            (y == my_chunk - 1 ? bottom_adjacent_row : &local_playground[(y + 1) * xsize]),local_playground, xsize, xsize, x, y);
                         }
                     }
                 }
             }
-        }
-
-        if(rank != size-1) {
-            mpi_order++;
-            MPI_Send(&mpi_order, 1, MPI_INT, bottom_neighbor, 0, MPI_COMM_WORLD);
-            MPI_Send(&local_playground[(my_chunk - 1) * xsize], xsize, MPI_UNSIGNED_CHAR, 
-             			 bottom_neighbor, 4, MPI_COMM_WORLD);
-
-	    if ( rank == 0 || step != n ) { 
-            MPI_Isend(&local_playground[0], xsize, MPI_UNSIGNED_CHAR, top_neighbor, 5, MPI_COMM_WORLD, &reqs[1]);
-           } 
+        // Ensure that all processes have finished this iteration before moving on to the next one
+        MPI_Barrier(MPI_COMM_WORLD);
         }
         
-        MPI_Barrier(MPI_COMM_WORLD);
-     
-        if(step % s == 0) {
-
-            write_snapshot(local_playground, 255, xsize, my_chunk, "osnapshot", step, offset);
-	 }
-       
-        if(rank == size-1 && step != n) {
-            mpi_order = 0;
-            MPI_Send(&mpi_order, 1, MPI_INT, bottom_neighbor, 0, MPI_COMM_WORLD); // last process sends to the first one
-            MPI_Send(&local_playground[(my_chunk - 1) * xsize], xsize, MPI_UNSIGNED_CHAR, bottom_neighbor, 4, MPI_COMM_WORLD);
-            MPI_Isend(&local_playground[0], xsize, MPI_UNSIGNED_CHAR, top_neighbor, 5, MPI_COMM_WORLD, &reqs[2]);
-        } 
     }
 
     free(top_adjacent_row);
