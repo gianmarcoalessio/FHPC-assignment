@@ -84,7 +84,7 @@ void ordered_evolution(unsigned char *local_playground, int xsize, int my_chunk,
         // Ensure that the processes execute in order
         for (int i = 0; i < size; i++) {
             if (i == rank) {       
-    #pragma omp parallel for collapse(2)
+    #pragma omp parallel for ordered collapse(2)
 
                 for (int y = 0; y < my_chunk; y++)
                 {
